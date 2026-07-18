@@ -212,21 +212,20 @@ export function buildBriefTranscript(blocks: NormalizedBlock[]): string {
 
   for (let blockIndex = 0; blockIndex < blocks.length; blockIndex++) {
     const b = blocks[blockIndex];
-    const ref = b.sourceIndex != null ? ` (#${b.sourceIndex})` : "";
 
     switch (b.kind) {
       case "user": {
         const text = b.text.trim();
         if (!text) break;
         const truncated = truncateUserText(text);
-        emit("[user]", contentLines(truncated, ref));
+        emit("[user]", contentLines(truncated, ""));
         break;
       }
 
       case "bash": {
         const cmd = b.command ? compressBash(b.command) : "";
         if (!cmd) break;
-        emit("[user]", contentLines(`$ ${cmd}`, ref));
+        emit("[user]", contentLines(`$ ${cmd}`, ""));
         break;
       }
 
@@ -238,15 +237,28 @@ export function buildBriefTranscript(blocks: NormalizedBlock[]): string {
           : { head: ASSISTANT_HEAD_WORDS, tail: ASSISTANT_TAIL_WORDS };
         const text = truncateHeadTail(raw, headTail.head, headTail.tail);
         if (text) {
-          emit("[assistant]", contentLines(text, ref));
+          emit("[assistant]", contentLines(text, ""));
         }
         break;
       }
 
       case "tool_call": {
-        if (!b.name || b.name.trim() === "") break;
-        const line = toolOneLiner(b.name, b.args ?? {}) + ref;
-        emit("[assistant]", [line]);
+        // Buffer consecutive tool calls; emit [tool calls elided] when done
+        let toolCount = 0;
+        while (blockIndex < blocks.length && blocks[blockIndex].kind === "tool_call") {
+          toolCount++;
+          blockIndex++;
+        }
+        blockIndex--; // back up one; for loop will advance past the last tool_call
+        if (toolCount === 1) {
+          const tb = blocks[blockIndex - toolCount + 1];
+          if (tb.kind === "tool_call" && tb.name) {
+            const line = toolOneLiner(tb.name, tb.args ?? {});
+            emit("[assistant]", [line]);
+          }
+        } else if (toolCount > 1) {
+          emit("[assistant]", [`[${toolCount} tool calls elided]`]);
+        }
         break;
       }
 

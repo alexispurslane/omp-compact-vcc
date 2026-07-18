@@ -32,12 +32,6 @@ function extractPath(args: Record<string, unknown> | undefined): string | null {
 
 // ── Constants ──
 
-const SCOPE_CHANGE_RE =
-  /\b(instead|actually|change of plan|forget that|new task|switch to|now I want|pivot|let'?s do|stop .* and)\b/i;
-
-const TASK_RE =
-  /\b(fix|implement|add|create|build|refactor|debug|investigate|update|remove|delete|migrate|deploy|test|write|set up)\b/i;
-
 const NOISE_SHORT_RE = /^(ok|yes|no|sure|yeah|yep|go|hi|hey|thx|thanks|ok\b.*|y|n|k)\s*[.!?]*$/i;
 
 const NON_GOAL_RE =
@@ -82,7 +76,6 @@ function collapseSkillLines(lines: string[]): string[] {
 // ── extractGoals ──
 
 const MAX_GOAL_CHARS = 200;
-const LEADING_CHARS = 200;
 
 function isSubstantiveGoal(text: string): boolean {
   const t = text.trim();
@@ -95,7 +88,7 @@ function isSubstantiveGoal(text: string): boolean {
 
 function extractGoals(blocks: NormalizedBlock[]): string[] {
   const goals: string[] = [];
-  let latestScopeChange: string[] | null = null;
+  const seen = new Set<string>();
 
   for (const b of blocks) {
     if (b.kind !== "user") continue;
@@ -104,34 +97,23 @@ function extractGoals(blocks: NormalizedBlock[]): string[] {
     const lines = collapseSkillLines(truncated.filter(isSubstantiveGoal))
       .map(stripBullet)
       .filter((l) => l.length > 5);
-    if (lines.length === 0) continue;
 
-    if (goals.length === 0) {
-      goals.push(...lines.slice(0, 6));
-      continue;
-    }
-
-    // Test scope-change / task intent only on the leading portion
-    // so pasted output below the instruction does not trigger matches.
-    const leading = b.text.slice(0, LEADING_CHARS);
-    if (SCOPE_CHANGE_RE.test(leading)) {
-      latestScopeChange = lines.slice(0, 3).map((l) => clip(l, MAX_GOAL_CHARS));
-    } else if (TASK_RE.test(leading) && lines[0].length > 15) {
-      latestScopeChange = lines.slice(0, 2).map((l) => clip(l, MAX_GOAL_CHARS));
+    for (const line of lines) {
+      const key = line.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      goals.push(clip(line, MAX_GOAL_CHARS));
     }
   }
 
-  if (latestScopeChange && latestScopeChange.length > 0) {
-    goals.push("[Scope change]", ...latestScopeChange);
-  }
-
-  return goals.slice(0, 8);
+  return goals.slice(0, 20);
 }
 
 // ── extractFiles ──
 
 interface FileActivity {
   read: Set<string>;
+  readRanges: Map<string, string>;  // path -> display suffix like "(lines 42-80)"
   modified: Set<string>;
   created: Set<string>;
 }
@@ -142,6 +124,7 @@ function extractFiles(
 ): FileActivity {
   const act: FileActivity = {
     read: new Set(fileOps?.readFiles ?? []),
+    readRanges: new Map(),
     modified: new Set(fileOps?.modifiedFiles ?? []),
     created: new Set(fileOps?.createdFiles ?? []),
   };
@@ -151,7 +134,17 @@ function extractFiles(
     const p = extractPath(b.args);
     if (!p || !b.name) continue;
 
-    if (FILE_READ_TOOLS.has(b.name)) act.read.add(p);
+    if (FILE_READ_TOOLS.has(b.name)) {
+      act.read.add(p);
+      // Track read range if offset/limit are present
+      const offset = b.args && typeof b.args.offset === "number" ? b.args.offset : undefined;
+      const limit = b.args && typeof b.args.limit === "number" ? b.args.limit : undefined;
+      if (offset !== undefined || limit !== undefined) {
+        const start = offset ?? 1;
+        const end = limit !== undefined ? (offset ?? 1) + (limit as number) - 1 : undefined;
+        act.readRanges.set(p, end ? `(lines ${start}-${end})` : `(line ${start}+)`);
+      }
+    }
     if (FILE_WRITE_TOOLS.has(b.name)) act.modified.add(p);
     if (FILE_CREATE_TOOLS.has(b.name)) act.created.add(p);
   }
@@ -197,14 +190,17 @@ function formatFileActivity(
   // Dedup: if already Modified, drop from Created
   for (const p of act.modified) act.created.delete(p);
   const lines: string[] = [];
-  const cap = (set: Set<string>, limit: number) => {
-    const arr = [...set];
+  const cap = (set: Set<string>, limit: number, ranges?: Map<string, string>) => {
+    const arr = [...set].map((p) => {
+      const range = ranges?.get(p);
+      return range ? `${p} ${range}` : p;
+    });
     if (arr.length <= limit) return arr.join(", ");
     return arr.slice(0, limit).join(", ") + ` (+${arr.length - limit} more)`;
   };
   if (act.modified.size > 0) lines.push(`Modified: ${cap(act.modified, 10)}`);
   if (act.created.size > 0) lines.push(`Created: ${cap(act.created, 10)}`);
-  if (act.read.size > 0) lines.push(`Read: ${cap(act.read, 10)}`);
+  if (act.read.size > 0) lines.push(`Read: ${cap(act.read, 10, act.readRanges)}`);
   return lines;
 }
 
