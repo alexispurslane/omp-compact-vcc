@@ -19,6 +19,10 @@ export default function ompCompactVcc(pi: ExtensionAPI) {
 
     try {
       const result = compact(branchEntries, { previousSummary, fileOps });
+
+      // Log timings for debugging
+      const ms = result.timings.total?.toFixed(0) ?? "?";
+      pi.logger?.debug?.(`vcc compact: ${ms}ms (cut=${result.timings.cut?.toFixed(0)} shake=${result.timings.shake?.toFixed(0)} norm=${result.timings.normalize?.toFixed(0)} extract=${result.timings.extract?.toFixed(0)} fmt=${result.timings.format?.toFixed(0)} merge=${result.timings.merge?.toFixed(0)})`);
       return {
         compaction: {
           summary: result.summary,
