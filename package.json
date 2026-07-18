@@ -1,6 +1,6 @@
 {
   "name": "omp-compact-vcc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Algorithmic (no-LLM) session compaction for omp — extracts goals, files, decisions, and blockers via regex to produce structured, deterministic summaries.",
   "type": "module",
   "main": "index.ts",

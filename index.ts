@@ -20,9 +20,12 @@ export default function ompCompactVcc(pi: ExtensionAPI) {
     try {
       const result = compact(branchEntries, { previousSummary, fileOps });
 
-      // Log timings for debugging
+      // Log timings — use pi.logger with a known working method
       const ms = result.timings.total?.toFixed(0) ?? "?";
-      pi.logger?.debug?.(`vcc compact: ${ms}ms (cut=${result.timings.cut?.toFixed(0)} shake=${result.timings.shake?.toFixed(0)} norm=${result.timings.normalize?.toFixed(0)} extract=${result.timings.extract?.toFixed(0)} fmt=${result.timings.format?.toFixed(0)} merge=${result.timings.merge?.toFixed(0)})`);
+      const detail = `cut=${result.timings.cut?.toFixed(0)}ms shake=${result.timings.shake?.toFixed(0)}ms norm=${result.timings.normalize?.toFixed(0)}ms extract=${result.timings.extract?.toFixed(0)}ms fmt=${result.timings.format?.toFixed(0)}ms merge=${result.timings.merge?.toFixed(0)}ms`;
+      // Try multiple logging approaches — one will work
+      try { pi.logger.info(`vcc compact: ${ms}ms total (${detail})`); } catch {}
+      try { console.error(`[vcc] ${ms}ms total (${detail})`); } catch {}
       return {
         compaction: {
           summary: result.summary,
