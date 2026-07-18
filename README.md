@@ -2,7 +2,7 @@
 
 Algorithmic session compaction for [omp](https://github.com/oh-my-pi/oh-my-pi). No LLM calls — produces structured, deterministic summaries via regex extraction and formatting. 35-99% token reduction on real sessions.
 
-Based on [pi-vcc](https://github.com/sting8k/pi-vcc) by [sting8k](https://github.com/sting8k), ported to the omp extension API.
+Based on [pi-vcc](https://github.com/monotykamary/pi-vcc) by [monotykamary](https://github.com/monotykamary), ported to the omp extension API.
 
 ## Install
 
@@ -32,7 +32,7 @@ Hooks `session_before_compact` to replace the built-in LLM summarization entirel
 
 ## Credits
 
-This plugin is a direct port of the algorithm and approach from [pi-vcc](https://github.com/sting8k/pi-vcc) by [sting8k](https://github.com/sting8k), adapted from the Pi extension API (`@earendil-works/pi-coding-agent`) to the omp extension API (`@oh-my-pi/pi-coding-agent`). The core extraction, brief, merge, and cut algorithms are derived from pi-vcc's source.
+This plugin is a direct port of the algorithm and approach from [pi-vcc](https://github.com/monotykamary/pi-vcc) by [monotykamary](https://github.com/monotykamary), adapted from the Pi extension API (`@earendil-works/pi-coding-agent`) to the omp extension API (`@oh-my-pi/pi-coding-agent`). The core extraction, brief, merge, and cut algorithms are derived from pi-vcc's source.
 
 ## License
 
