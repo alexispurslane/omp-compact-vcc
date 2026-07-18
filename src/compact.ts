@@ -8,10 +8,17 @@ import { buildBriefTranscript } from "./brief";
 import { formatSummary } from "./format";
 import { mergeWithPrevious } from "./merge";
 
+export interface CompactOptions {
+  previousSummary?: string;
+  fileOps?: { readFiles?: string[]; modifiedFiles?: string[]; createdFiles?: string[] };
+}
+
 export function compact(
   branchEntries: SessionEntry[],
-  previousSummary?: string,
+  options?: CompactOptions,
 ): { summary: string; firstKeptEntryId: string; stats: CompactionStats } {
+  const previousSummary = options?.previousSummary;
+  const fileOps = options?.fileOps;
   // 1. Determine cut point
   const cut = smartCut(branchEntries);
 
@@ -29,8 +36,8 @@ export function compact(
   // 5. Filter noise
   const filtered = filterNoise(blocks);
 
-  // 6. Extract structured sections
-  const data = extractSections(filtered);
+  // 6. Extract structured sections (with fileOps from prior compactions)
+  const data = extractSections(filtered, fileOps);
 
   // 7-8. Build and attach brief transcript
   data.briefTranscript = buildBriefTranscript(filtered);

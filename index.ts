@@ -10,8 +10,15 @@ export default function ompCompactVcc(pi: ExtensionAPI) {
     const previousSummary = preparation?.previousSummary as string | undefined;
     const tokensBefore = preparation?.tokensBefore as number;
 
+    // Extract fileOps from the event for cumulative file tracking
+    const fops = preparation?.fileOps as { read?: string[]; written?: string[]; edited?: string[] } | undefined;
+    const fileOps = fops ? {
+      readFiles: fops.read ?? [],
+      modifiedFiles: [...(fops.written ?? []), ...(fops.edited ?? [])],
+    } : undefined;
+
     try {
-      const result = compact(branchEntries, previousSummary);
+      const result = compact(branchEntries, { previousSummary, fileOps });
       return {
         compaction: {
           summary: result.summary,
