@@ -1,0 +1,16 @@
+{
+  "name": "omp-compact-vcc",
+  "version": "1.0.0",
+  "description": "Algorithmic (no-LLM) session compaction for omp — extracts goals, files, decisions, and blockers via regex to produce structured, deterministic summaries.",
+  "type": "module",
+  "main": "index.ts",
+  "files": ["index.ts", "src/"],
+  "omp": {
+    "extensions": ["./index.ts"]
+  },
+  "peerDependencies": {
+    "@oh-my-pi/pi-coding-agent": "*"
+  },
+  "keywords": ["omp", "oh-my-pi", "compaction", "vcc", "extension"],
+  "license": "MIT"
+}
