@@ -36,4 +36,4 @@ This plugin is a direct port of the algorithm and approach from [pi-vcc](https:/
 
 ## License
 
-MIT
+[0BSD](https://opensource.org/licenses/0BSD)

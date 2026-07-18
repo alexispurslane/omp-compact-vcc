@@ -12,5 +12,5 @@
     "@oh-my-pi/pi-coding-agent": "*"
   },
   "keywords": ["omp", "oh-my-pi", "compaction", "vcc", "extension"],
-  "license": "MIT"
+  "license": "0BSD"
 }
